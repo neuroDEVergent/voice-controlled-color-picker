@@ -8,6 +8,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <stb_image.h>
+#include <vosk_api.h>
 
 // C++ Standard Template Library (STL)
 #include <iostream>
@@ -20,6 +21,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "vosk_api.h"
 
 // #################### vvv Globals vvv ####################
 // Globals are prefixed with 'g'
@@ -32,6 +34,8 @@ SDL_GLContext gOpenGLContext = nullptr;
 
 // Main loop flag
 bool gQuit = false; // If this is true then the program terminates
+
+VoskModel* model = vosk_model_new("/home/p/Projects/voice-controlled-color-picker/thirdparty/vosk-model-en-us-0.22");
 
 // shader
 // The following stores the unique id for the graphics pipeline
@@ -367,6 +371,12 @@ int main( int argc, char* args[] )
 
   // 1. Setup the graphics program
   InitializeProgram();
+
+  if (!model)
+  {
+    printf("Failed to load Vosk Model\n");
+    return 1;
+  }
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();

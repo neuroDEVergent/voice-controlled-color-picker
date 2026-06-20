@@ -9,18 +9,21 @@ External libraries which are included in this project:
 - **SDL2**: Handles input, windows and OpenGL context 
 - **GLAD**: Loading OpenGL functions
 - **GLM**: For various mathematical operations
-- **imGUI**: For UI elements
-- **Whisper**: For translating voice inputs into strings
+- **Dear imGUI**: For UI elements
+- **Vosk**: For translating voice inputs into strings
 
 ## Compile on Linux with
 ```bash
-g++ -std=c++17 ./src/* ./thirdparty/imgui/*.cpp ./thirdparty/imgui/backends/*.cpp \
-      -o prog \
-      -I./include/ \
-      -I./thirdparty/glm-master/ \
-      -I./thirdparty/imgui/ \
-      -I./thirdparty/imgui/backends \
-      -I/usr/include/SDL2 \
-      -lSDL2 \
-      -ldl
+g++ -std=c++17 ./src/* \
+  ./thirdparty/imgui/*.cpp \
+  ./thirdparty/imgui/backends/*.cpp \
+  -o prog \
+  -I./include/ \
+  -I./thirdparty/glm-master/ \
+  -I./thirdparty/imgui/ \
+  -I./thirdparty/imgui/backends \
+  -I/usr/include/SDL2 \
+  -lSDL2 \
+  -ldl \
+  -lvosk
 ```
