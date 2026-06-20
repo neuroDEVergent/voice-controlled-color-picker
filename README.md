@@ -14,5 +14,13 @@ External libraries which are included in this project:
 
 ## Compile on Linux with
 ```bash
-g++ -std=c++17 ./src/* -o prog -I ./include/ -I ./thirdparty/glm-master/ -lSDL2 -ldl
+g++ -std=c++17 ./src/* ./thirdparty/imgui/*.cpp ./thirdparty/imgui/backends/*.cpp \
+      -o prog \
+      -I./include/ \
+      -I./thirdparty/glm-master/ \
+      -I./thirdparty/imgui/ \
+      -I./thirdparty/imgui/backends \
+      -I/usr/include/SDL2 \
+      -lSDL2 \
+      -ldl
 ```

@@ -16,7 +16,10 @@
 #include <fstream>
 
 // Personal libraries
-#include <Shader.hpp>
+#include "Shader.hpp"
+#include "imgui.h"
+#include "backends/imgui_impl_sdl2.h"
+#include "backends/imgui_impl_opengl3.h"
 
 // #################### vvv Globals vvv ####################
 // Globals are prefixed with 'g'
@@ -250,6 +253,7 @@ void Input()
   // Handle events on queue
   while(SDL_PollEvent(&e) != 0)
   {
+    ImGui_ImplSDL2_ProcessEvent(&e);
     // If user posts an event to quit
     // An example is hitting the "x" in the corner of the window
     if (e.type == SDL_QUIT)
@@ -316,14 +320,33 @@ void MainLoop()
   // While application is running
   while (!gQuit)
   {
-    // Handle input 
+
     Input();
-    // Setup anything that needs to take place before draw calls 
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
 
     PreDraw();
-    // Draw calls in OpenGL
 
     Draw();
+
+    ImGui::Begin("Hello");
+    ImGui::Text("Hello from dear imgui");
+
+    static float value = 0.5f;
+    ImGui::SliderFloat("Value", &value, 0.0f, 1.0f);
+
+    if (ImGui::Button("Click Me"))
+    {
+      printf("Button pressed\n");
+    }
+
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
     // Update screen of our specified window
     SDL_GL_SwapWindow(gGraphicsApplicationWindow);
   }
@@ -344,6 +367,17 @@ int main( int argc, char* args[] )
 
   // 1. Setup the graphics program
   InitializeProgram();
+
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+
+  ImGuiIO& io = ImGui::GetIO();
+  (void)io;
+
+  ImGui::StyleColorsDark();
+
+  ImGui_ImplSDL2_InitForOpenGL(gGraphicsApplicationWindow, gOpenGLContext);
+  ImGui_ImplOpenGL3_Init("#version 330");
 
   // 2. Setup the geometry
   VertexSpecification();
