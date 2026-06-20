@@ -1,17 +1,16 @@
-# GLoom
-This is a minimal, blank OpenGL project that sets up GLM, GLAD and SDL and draws a square to the screen, which serves as a starting point for OpenGL projects.
-
-![OpenGL Square](square.png)
+# Voice Controlled Color Picker
+This is an attempt at my own challenge, to make worst possible, the most impractical color picker I can imagine.
 
 ## Features
-- This project sets up basic libraries and gets you ready to write OpenGL programs
-- It includes verbose comments with explanations of how everything works
+- Will add soon
 
 ## Libraries
 External libraries which are included in this project:
 - **SDL2**: Handles input, windows and OpenGL context 
 - **GLAD**: Loading OpenGL functions
 - **GLM**: For various mathematical operations
+- **imGUI**: For UI elements
+- **Whisper**: For translating voice inputs into strings
 
 ## Compile on Linux with
 ```bash
