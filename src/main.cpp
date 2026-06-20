@@ -22,12 +22,10 @@
 // Globals are prefixed with 'g'
 
 // Screen dimensions
-int gScreenWidth = 640;
-int gScreenHeight = 480;
+int gScreenWidth = 1280;
+int gScreenHeight = 720;
 SDL_Window* gGraphicsApplicationWindow = nullptr;
 SDL_GLContext gOpenGLContext = nullptr;
-
-GLfloat gupdown = 0;
 
 // Main loop flag
 bool gQuit = false; // If this is true then the program terminates
@@ -54,7 +52,6 @@ GLuint VBO = 0;
 // to draw from, when we do indexed drawing.
 GLuint EBO = 0;
 
-GLuint texture1, texture2;
 // #################### ^^^ Globals ^^^ ####################
 
 
@@ -180,52 +177,6 @@ void VertexSpecification()
                         8 * sizeof(GLfloat),
                         (GLvoid*)(sizeof(GLfloat)*6));
 
-  // Load and create a textures
-  // --- texture 1
-  glGenTextures(1, &texture1);
-  glBindTexture(GL_TEXTURE_2D, texture1);
-  // set texture wrapping parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  // set texture filtering parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  // load image, create texture and generate mipmaps
-  int width, height, nrChannels;
-  stbi_set_flip_vertically_on_load(true);
-  unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
-  if (data)
-  {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-  }
-  else
-  {
-    std::cout << "failed to load texture" << std::endl;
-  }
-  stbi_image_free(data);
-  // ---- texture2
-  glGenTextures(1, &texture2);
-  glBindTexture(GL_TEXTURE_2D, texture2);
-  // wrapping parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  // filtering parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  data = stbi_load("awesomeface.png", &width, &height, &nrChannels, 0);
-  if (data)
-  {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-  }
-  else
-  {
-    std::cout << "failed to load texture" << std::endl;
-  }
-
-    // Unbind our currently bound Vertex Array Object
-  glBindVertexArray(0);
   // Disable any attributes we opened in our Vertex Attribute Array,
   // as we do not want to leave them open
   glDisableVertexAttribArray(0);
@@ -306,27 +257,7 @@ void Input()
       std::cout << "Goodbye!" << std::endl;
       gQuit = true;
     }
-
-   const Uint8 *state = SDL_GetKeyboardState(NULL);
-   if (state[SDL_SCANCODE_UP])
-   {
-    gupdown += 0.01f;
-    if (gupdown >= 1.0f)
-    {
-      gupdown = 1.0f;
-    }
-   }
-
-   if (state[SDL_SCANCODE_DOWN])
-   {
-    gupdown -= 0.01f;
-    if (gupdown <= 0.0f)
-    {
-      gupdown = 0.0f;
-    }
-   }
   }
-  
 }
 
 /*
@@ -344,22 +275,13 @@ void PreDraw()
   // Initialize clear color
   // This is the background of the screen
   glViewport(0, 0, gScreenWidth, gScreenHeight);
-  glClearColor(.03f, .05f, 0.27f, 1.f);
+  glClearColor(0, 0, 0, 1.f);
 
   // Clear color buffer and depth buffer
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture1);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, texture2);
-  
+ 
   // Use our shader
   glUseProgram(gGraphicsPipelineShaderProgram);
-
-  glUniform1i(glGetUniformLocation(gGraphicsPipelineShaderProgram, "texture1"), 0);
-  glUniform1i(glGetUniformLocation(gGraphicsPipelineShaderProgram, "texture2"), 1);
-  glUniform1f(glGetUniformLocation(gGraphicsPipelineShaderProgram, "aUpDown"), gupdown);
 }
 
 /*
