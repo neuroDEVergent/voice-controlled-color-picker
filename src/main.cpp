@@ -13,6 +13,8 @@ int screen_width = 1280;
 int screen_height = 720;
 SDL_Window* window = nullptr;
 SDL_GLContext gl_context = nullptr;
+SDL_AudioDeviceID sdl_device;
+SDL_AudioSpec sdl_audio_spec;
 
 // Main loop flag
 bool quit = false; // If this is true then the program terminates
@@ -23,6 +25,7 @@ static const char* last_command = nullptr;
 
 void audioCallback(void* userdata, Uint8* stream, int len);
 void Input();
+void printSpec();
 
 void initializeProgram()
 {
@@ -75,7 +78,7 @@ void initializeProgram()
   ImGui_ImplOpenGL3_Init("#version 330");
 
   // Vosk
-  vosk_model = vosk_model_new("/home/p/Projects/voice-controlled-color-picker/thirdparty/vosk-model-en-us-0.22");
+  vosk_model = vosk_model_new("./thirdparty/vosk-model-en-us-0.22");
   if (!vosk_model)
   {
     printf("Failed to load Vosk Model\n");
@@ -98,22 +101,46 @@ void initializeProgram()
   desired.channels = 1;
   desired.samples = 1024;
   desired.callback = audioCallback;
-  SDL_AudioDeviceID dev = SDL_OpenAudioDevice(NULL, SDL_TRUE, &desired, NULL, 0);
-  SDL_PauseAudioDevice(dev, 0);
+  sdl_device = SDL_OpenAudioDevice(NULL, SDL_TRUE, &desired, &sdl_audio_spec, 0);
+  SDL_PauseAudioDevice(sdl_device, 0);
 
-  // Get the info
-  printf("Program initialized successfully\n");
-  printf("Vendor: %s\n", glGetString(GL_VENDOR));
-  printf("Renderer: %s\n", glGetString(GL_RENDERER));
-  printf("Version: %s\n", glGetString(GL_VERSION));
-  printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+  // Print specification
+  printSpec();
+}
+
+void printSpec()
+{
+  printf("Program initialized successfully\n\n");
+
+  printf("---OpenGL---\n");
+  printf("  Vendor: %s\n", glGetString(GL_VENDOR));
+  printf("  Renderer: %s\n", glGetString(GL_RENDERER));
+  printf("  Version: %s\n", glGetString(GL_VERSION));
+  printf("  Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+  printf("\n");
+
+  printf("---Audio Device---\n");
+  printf("  Frequency: %d\n", sdl_audio_spec.freq);
+  printf("  Channels: %d\n", sdl_audio_spec.channels);
+  printf("  Samples: %d\n", sdl_audio_spec.samples);
+  printf("  Format: 0x%x\n", sdl_audio_spec.format);
+  printf("\n");
+
+  printf("---Dear ImGui---\n");
+  printf("  Version: %s\n", IMGUI_VERSION);
+  printf("\n");
+
+  printf("---Vosk---\n");
+  printf("  Model: %s\n", "vosk-model-en-us-0.22");
+  printf("\n");
+ 
 }
 
 void mainLoop()
 {
   while (!quit)
   {
-    SDL_Delay(100);
+    SDL_Delay(1);
 
     Input();
 
@@ -133,7 +160,7 @@ void mainLoop()
       ImGui::Text("Last command: %s", last_command);
 
       if (strstr(last_command, "red")) ImGui::Text("RED");
-      if (strstr(last_command, "green")) ImGui::Text("GREEn");
+      if (strstr(last_command, "green")) ImGui::Text("GREEN");
       if (strstr(last_command, "blue")) ImGui::Text("BLUE");
     }
 
@@ -166,6 +193,8 @@ void Input()
 
 void cleanUp()
 {
+  SDL_PauseAudioDevice(sdl_device, 1);
+  SDL_CloseAudioDevice(sdl_device);
   vosk_recognizer_free(vosk_recognizer);
   vosk_model_free(vosk_model);
   SDL_DestroyWindow(window);
