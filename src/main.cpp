@@ -1,33 +1,32 @@
-// Third Party Libraries
 #include <SDL2/SDL.h>
 #include <glad/glad.h>
 #include <vosk_api.h>
 
-// Personal
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_opengl3.h"
 
-// Screen dimensions
+// SDL globals variables
 int screen_width = 1280;
 int screen_height = 720;
 SDL_Window* window = nullptr;
 SDL_GLContext gl_context = nullptr;
 SDL_AudioDeviceID sdl_device;
 SDL_AudioSpec sdl_audio_spec;
+bool quit = false;
 
-// Main loop flag
-bool quit = false; // If this is true then the program terminates
-
+// Vosk global variables
 VoskModel* vosk_model; 
 VoskRecognizer* vosk_recognizer;
 static const char* last_command = nullptr;
 
-void audioCallback(void* userdata, Uint8* stream, int len);
-void Input();
+// Function declarations
+void init();
+void audio_callback(void* userdata, Uint8* stream, int len);
+void input();
 void printSpec();
 
-void initializeProgram()
+void init()
 {
   // SDL Video
   if (SDL_Init(SDL_INIT_VIDEO) < 0)
