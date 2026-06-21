@@ -15,26 +15,39 @@ SDL_AudioDeviceID sdl_device;
 SDL_AudioSpec sdl_audio_spec;
 bool quit = false;
 
+
+static char instructions[4096] = 
+  "step1\n"
+  "step2\n"
+  "step3\n";
+
 // Vosk global variables
 VoskModel* vosk_model; 
 VoskRecognizer* vosk_recognizer;
 static const char* last_command = nullptr;
+float command_volume = 0.0f;
+bool selected = false;
 
-struct Signals
+unsigned int spacing = 30;
+typedef struct Bar
 {
-  bool nothing;
-  bool red;
-  bool green;
-  bool blue;
-  bool less;
-  bool more;
-} Signals;
+  ImVec2 pos;
+  ImVec2 size;
+  float value;
+  float target_value;
+} Bar;
+
+Bar red_bar;
+Bar blue_bar;
+Bar green_bar;
+Bar* selected_bar;
+
 
 struct Color 
 {
-  float r = 255.f;
-  float g = 255.f;
-  float b = 255.f;
+  float r;
+  float g;
+  float b;
   float val = 15.0;
 } Color;
 
@@ -46,7 +59,13 @@ const char* KEYWORDS = "[\"[unk]\", \"nothing\",\"red\", \"green\", \"blue\", \"
 void init();
 void printSpec();
 void voice_commands();
+void rgb_tab();
+void hsl_tab();
+void hex_tab();
+void ui();
+void mainLoop();
 void input();
+void cleanUp();
 void audio_callback(void* userdata, Uint8* stream, int len);
 
 void init()
@@ -126,6 +145,25 @@ void init()
   sdl_device = SDL_OpenAudioDevice(NULL, SDL_TRUE, &desired, &sdl_audio_spec, 0);
   SDL_PauseAudioDevice(sdl_device, 0);
 
+  // Bars
+  red_bar = {};
+  red_bar.pos = ImVec2(435, 80);
+  red_bar.size = ImVec2(30, 300);
+  red_bar.value = 255.0f;
+  red_bar.target_value = red_bar.value;
+
+  blue_bar = {};
+  blue_bar.pos = ImVec2(red_bar.pos.x + red_bar.size.x + spacing, red_bar.pos.y);
+  blue_bar.size = ImVec2(30, 300);
+  blue_bar.value = 150.0f;
+  blue_bar.target_value = blue_bar.value;
+
+  green_bar = {};
+  green_bar.pos = ImVec2(blue_bar.pos.x + blue_bar.size.x + spacing, blue_bar.pos.y);
+  green_bar.size = ImVec2(30, 300);
+  green_bar.value = 50.0f;
+  green_bar.target_value = green_bar.value;
+
   // Print specification
   printSpec();
 }
@@ -162,44 +200,37 @@ void voice_commands()
 {
   if (last_command)
   {
-//    ImGui::Text("Last command: %s", last_command);
-    
     if (strstr(last_command, "nothing"))
     {
-      Signals = {};
-      Signals.nothing = true;
+      selected = false;
     }
     if (strstr(last_command, "red") || strstr(last_command, "read"))
     {
-      Signals = {};
-      Signals.red = true;
+      selected = true;
+      selected_bar = &red_bar;
     }
     if (strstr(last_command, "green"))
     {
-      Signals = {};
-      Signals.green = true;
+      selected = true;
+      selected_bar = &green_bar;
     }
     if (strstr(last_command, "blue"))
     {
-      Signals = {};
-      Signals.blue = true;
+      selected = true;
+      selected_bar = &blue_bar;
     }
     if (strstr(last_command, "less"))
     {
-      Signals.less = true;
+      selected_bar->target_value = selected_bar->value - command_volume * 100.0f;
+      if (selected_bar->target_value <= 0.0) selected_bar->target_value = 0.0f;
     }
     if (strstr(last_command, "more"))
     {
-      Signals.more = true;
+      selected_bar->target_value = selected_bar->value + command_volume * 100.0f;
+      if (selected_bar->target_value >= 255.0) selected_bar->target_value = 255.0;
     }
 
     last_command = NULL;
-  }
-
-  else
-  {
-    Signals.less = false;
-    Signals.more = false;
   }
 }
 
@@ -210,59 +241,69 @@ void rgb_tab()
   ImVec2 pos(85, 85);
   ImVec2 size(300, 300);
 
-  ImU32 color = IM_COL32((int)Color.r, (int)Color.g, (int)Color.b, 255);
+  ImU32 color = IM_COL32((int)red_bar.value, (int)green_bar.value, (int)blue_bar.value, 255);
 
   draw_list->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), color);
 
+  int spacing = 50;
   ImVec2 bar_pos(435, 85);
   ImVec2 bar_size(30, 300);
-  int spacing = 50;
 
   // Red bar
   draw_list->AddRectFilled(
-    ImVec2(bar_pos.x, bar_pos.y + bar_size.y - (Color.r / 255.0f) * bar_size.y),
-    ImVec2(bar_pos.x + bar_size.x, bar_pos.y + bar_size.y),
+    ImVec2(red_bar.pos.x, red_bar.pos.y + red_bar.size.y - (red_bar.value / 255.0f) * red_bar.size.y),
+    ImVec2(red_bar.pos.x + red_bar.size.x, red_bar.pos.y + red_bar.size.y),
     IM_COL32(255, 0, 0, 255)
   );
 
   // Green bar
   draw_list->AddRectFilled(
-    ImVec2(bar_pos.x + spacing, bar_pos.y + bar_size.y - (Color.g / 255.0f) * bar_size.y),
-    ImVec2(bar_pos.x + bar_size.x + spacing, bar_pos.y + bar_size.y),
+    ImVec2(green_bar.pos.x, green_bar.pos.y + green_bar.size.y - (green_bar.value / 255.0f) * green_bar.size.y),
+    ImVec2(green_bar.pos.x + green_bar.size.x, green_bar.pos.y + green_bar.size.y),
     IM_COL32(0, 255, 0, 255)
   );
 
   // Blue bar
   draw_list->AddRectFilled(
-    ImVec2(bar_pos.x + 2.0 * spacing, bar_pos.y + bar_size.y - (Color.b / 255.0f) * bar_size.y),
-    ImVec2(bar_pos.x + bar_size.x + 2.0 * spacing, bar_pos.y + bar_size.y),
+    ImVec2(blue_bar.pos.x, blue_bar.pos.y + blue_bar.size.y - (blue_bar.value / 255.0f) * blue_bar.size.y),
+    ImVec2(blue_bar.pos.x + blue_bar.size.x, blue_bar.pos.y + blue_bar.size.y),
     IM_COL32(0, 0, 255, 255)
   );
 
   // Borders
   draw_list->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), IM_COL32_WHITE);
 
-  if (Signals.red) 
+  if (selected)
   {
-    draw_list->AddRect(bar_pos, ImVec2(bar_pos.x + bar_size.x, bar_pos.y + bar_size.y), IM_COL32_WHITE);
+    draw_list->AddRect(
+      selected_bar->pos, 
+      ImVec2(selected_bar->pos.x + selected_bar->size.x, selected_bar->pos.y + selected_bar->size.y), 
+      IM_COL32_WHITE
+    );
 
-    if (Signals.less) Color.r -= Color.val;
-    if (Signals.more) Color.r += Color.val;
+    float speed = 3.0;
+    selected_bar->value += (selected_bar->target_value - selected_bar->value) * speed * ImGui::GetIO().DeltaTime;
+  }
 
-  }
-  if (Signals.green) 
-  {
-    draw_list->AddRect(ImVec2(bar_pos.x + spacing, bar_pos.y), ImVec2(bar_pos.x + bar_size.x + spacing, bar_pos.y + bar_size.y), IM_COL32_WHITE);
-    if (Signals.less) Color.g -= Color.val;
-    if (Signals.more) Color.g += Color.val;
-  }
-  if (Signals.blue)
-  {
-    draw_list->AddRect(ImVec2(bar_pos.x + 2 * spacing, bar_pos.y), ImVec2(bar_pos.x + bar_size.x + 2* spacing, bar_pos.y + bar_size.y), IM_COL32_WHITE);
+  // Instruction text box
+  ImGui::SetWindowFontScale(1.3f);
+  ImGui::SetCursorPos(ImVec2(650, 85)); // hardcoded x, y within the window
+  ImGui::Text("---Instructions---");
 
-    if (Signals.less) Color.b -= Color.val;
-    if (Signals.more) Color.b += Color.val;
-  }
+  ImGui::SetCursorPos(ImVec2(650, 100));
+  ImGui::Text("- Say: \'red\', \'green\' or \'blue\' to select the color channel");
+
+  ImGui::SetCursorPos(ImVec2(650, 115));
+  ImGui::Text("- Say: \'nothing\' to deselect the color channel");
+
+  ImGui::SetCursorPos(ImVec2(650, 130));
+  ImGui::Text("- Say: \'more\' to increase it's value");
+
+  ImGui::SetCursorPos(ImVec2(650, 145));
+  ImGui::Text("- Say: \'less\' to decrease it's value");
+
+  ImGui::SetCursorPos(ImVec2(650, 160));
+  ImGui::Text("- Yelling will significantly increase the amount of color!");
 }
 
 void hsl_tab()
@@ -365,10 +406,33 @@ int main( int argc, char* args[] )
   return 0;
 }
 
+static float utterance_peak = 0.0f;
+
 void audio_callback(void* userdata, Uint8* stream, int len)
 {
+  const int16_t* samples = (const int16_t*)stream;
+  int sample_count = len / sizeof(int16_t);
+
+  float sum_sq = 0.0f;
+  for (int i = 0; i < sample_count; i++) {
+    float s = samples[i] / 32768.0f;
+    sum_sq += s * s;
+  }
+
+  float rms = sqrtf(sum_sq / sample_count);
+
+  float gain = 1.0f;
+  float exponent = 0.5f;
+  float boosted = powf(rms * gain, exponent);
+  boosted = fminf(boosted, 1.0f);
+
+  if (boosted > utterance_peak)
+    utterance_peak = boosted;
+
   if (vosk_recognizer_accept_waveform(vosk_recognizer, (const char*)stream, len))
   {
     last_command = vosk_recognizer_result(vosk_recognizer);
+    command_volume = utterance_peak;   // commit the peak for this command
+    utterance_peak = 0.0f;             // reset for the next utterance
   }
 }
