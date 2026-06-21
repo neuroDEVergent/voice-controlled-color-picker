@@ -15,18 +15,15 @@ SDL_AudioDeviceID sdl_device;
 SDL_AudioSpec sdl_audio_spec;
 bool quit = false;
 
-
-static char instructions[4096] = 
-  "step1\n"
-  "step2\n"
-  "step3\n";
-
 // Vosk global variables
 VoskModel* vosk_model; 
 VoskRecognizer* vosk_recognizer;
 static const char* last_command = nullptr;
 float command_volume = 0.0f;
 bool selected = false;
+#define WAVE_BUFFER_SIZE 256
+float wave_buffer[WAVE_BUFFER_SIZE] = {0};
+int wave_offset = 0;
 
 unsigned int spacing = 30;
 typedef struct Bar
@@ -304,6 +301,23 @@ void rgb_tab()
 
   ImGui::SetCursorPos(ImVec2(650, 160));
   ImGui::Text("- Yelling will significantly increase the amount of color!");
+
+  // Waveform display
+  ImGui::SetCursorPos(ImVec2(85, 400));
+  ImVec4 window_bg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+  ImGui::PushStyleColor(ImGuiCol_FrameBg, window_bg);
+  ImGui::PushStyleColor(ImGuiCol_PlotLines, IM_COL32(255, 255, 255, 255));
+  ImGui::PlotLines(
+    "##waveform",
+    wave_buffer,
+    WAVE_BUFFER_SIZE,
+    wave_offset,
+    nullptr,
+    -1.0f, 1.0f,
+    ImVec2(500, 80) // width matches roughly the rectangle+bars span (85 to 465)
+  );
+
+  ImGui::PopStyleColor(2);
 }
 
 void hsl_tab()
@@ -413,6 +427,16 @@ void audio_callback(void* userdata, Uint8* stream, int len)
   const int16_t* samples = (const int16_t*)stream;
   int sample_count = len / sizeof(int16_t);
 
+  // --- feed the waveform display ---
+  int step = sample_count / 64;
+  if (step < 1) step = 1;
+  for (int i = 0; i < sample_count; i += step)
+  {
+    wave_buffer[wave_offset] = samples[i] / 32768.0f;
+    wave_offset = (wave_offset + 1) % WAVE_BUFFER_SIZE;
+  }
+  // --- end waveform feed ---
+
   float sum_sq = 0.0f;
   for (int i = 0; i < sample_count; i++) {
     float s = samples[i] / 32768.0f;
@@ -432,7 +456,7 @@ void audio_callback(void* userdata, Uint8* stream, int len)
   if (vosk_recognizer_accept_waveform(vosk_recognizer, (const char*)stream, len))
   {
     last_command = vosk_recognizer_result(vosk_recognizer);
-    command_volume = utterance_peak;   // commit the peak for this command
-    utterance_peak = 0.0f;             // reset for the next utterance
+    command_volume = utterance_peak;
+    utterance_peak = 0.0f;
   }
 }
