@@ -1,7 +1,7 @@
 # Voice Controlled Color Picker
 This is an attempt at my own challenge, to make worst possible, the most impractical color picker I can imagine.
 
-![Demo)(./demo.gif)
+![Demo](./demo.gif)
 
 ## Features
 - Only RGB mode for now
