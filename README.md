@@ -1,8 +1,12 @@
 # Voice Controlled Color Picker
 This is an attempt at my own challenge, to make worst possible, the most impractical color picker I can imagine.
 
+![Demo)(./demo.gif)
+
 ## Features
-- Will add soon
+- Only RGB mode for now
+- Supports voice commands for selecting the color channel
+- Supports voice commands for volume based color value increments
 
 ## Libraries
 External libraries which are included in this project:
@@ -25,3 +29,5 @@ g++ -std=c++17 ./src/* \
   -ldl \
   -lvosk
 ```
+## Vosk
+it's required to have another directory called "thirdparty", with vosk-model-en-us-0.22 downloaded and extracted from:  https://alphacephei.com/vosk/models 
